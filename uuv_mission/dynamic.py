@@ -94,11 +94,8 @@ class Mission:
                     Empty.append(i)
                     break
 
-        print(Empty)
         for i in range(len(Empty)):
             CSV.pop(Empty[i]-i)
-            print(CSV)
-        
         leng = len(CSV)
         
         referance = np.zeros(leng)
@@ -133,7 +130,7 @@ class ClosedLoop:
         for t in range(T):
             positions[t] = self.plant.get_position()
             observation_t = self.plant.get_depth()
-            errors[t] = self.controller.get_errors(observation_t, mission.reference[t])
+            errors[t] = self.controller.get_error(observation_t, mission.reference[t])
             actions[t] = self.controller.get_action_PD(errors, t)
             self.plant.transition(actions[t], disturbances[t])
 

@@ -10,5 +10,5 @@ class Controller:
         return error
 
     def get_action_PD(self, error, t):
-        action = self.kp * error[t] + self.kd * (error[t] - error[t-1])
+        action = -(self.kp * error[t] + self.kd * (error[t] - error[t-1]))
         return action
