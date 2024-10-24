@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 import matplotlib.pyplot as plt
 from terrain import generate_reference_and_limits
+from control import Controller
 
 class Submarine:
     def __init__(self):
@@ -74,14 +75,46 @@ class Mission:
         return cls(reference, cave_height, cave_depth)
 
     @classmethod
-    def from_csv(cls, file_name: str):
-        with open (file_name, "r") as file:
+    def from_csv(cls, file_path: str):
+        with open (file_path, "r") as file:
             CSV = file.read()
-        return CSV
+
+        CSV = CSV.rsplit("\n")
+        leng = len(CSV)
+        for i in range (leng):
+            CSV[i] = CSV[i].rsplit(",")
+
+        Empty = []
+
+        for i in range(leng):
+            for j in range(len(CSV[i])):
+                try:
+                    CSV[i][j] = float(CSV[i][j])
+                except:
+                    Empty.append(i)
+                    break
+
+        print(Empty)
+        for i in range(len(Empty)):
+            CSV.pop(Empty[i]-i)
+            print(CSV)
+        
+        leng = len(CSV)
+        
+        referance = np.zeros(leng)
+        cave_height = np.zeros(leng)
+        cave_depth = np.zeros(leng)
+
+        for i in range(leng-1):
+            referance[i] = CSV[i][0]
+            cave_height[i] = CSV[i][1]
+            cave_depth[i] = CSV[i][2]
+
+        return cls(referance, cave_height, cave_depth)
 
 
 class ClosedLoop:
-    def __init__(self, plant: Submarine, controller):
+    def __init__(self, plant: Submarine, controller: Controller):
         self.plant = plant
         self.controller = controller
 
@@ -93,12 +126,15 @@ class ClosedLoop:
         
         positions = np.zeros((T, 2))
         actions = np.zeros(T)
+        errors = np.zeros(T)
+        actions = np.zeros(T)
         self.plant.reset_state()
 
         for t in range(T):
             positions[t] = self.plant.get_position()
             observation_t = self.plant.get_depth()
-            # Call your controller here
+            errors[t] = self.controller.get_errors(observation_t, mission.reference[t])
+            actions[t] = self.controller.get_action_PD(errors, t)
             self.plant.transition(actions[t], disturbances[t])
 
         return Trajectory(positions)
